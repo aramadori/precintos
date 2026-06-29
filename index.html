@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="description" content="Control de precintos CABLE y BOTELLA">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css?v=6">
+  <title>Precintos</title>
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header>
+    <h1>🔒 Precintos</h1>
+    <div class="header-actions">
+      <button id="btn-historial" class="btn-historial" title="Ver historial de rendidos">📜</button>
+      <button id="btn-export" title="Exportar JSON">⬇ Exportar</button>
+      <button id="btn-import" title="Importar JSON">⬆ Importar</button>
+      <input type="file" id="import-file" accept=".json" hidden>
+    </div>
+  </header>
+
+  <!-- ── Tab Navigation ── -->
+  <nav class="tab-nav" role="tablist">
+    <button class="tab-btn active" data-tab="possession" role="tab">
+      En posesión <span class="badge" id="badge-possession">0</span>
+    </button>
+    <button class="tab-btn" data-tab="used" role="tab">
+      Utilizado <span class="badge" id="badge-used">0</span>
+    </button>
+    <button class="tab-btn" data-tab="add" role="tab">
+      ＋ Agregar
+    </button>
+  </nav>
+
+  <!-- ── Tab: En posesión ── -->
+  <section class="tab-content active" id="tab-possession" role="tabpanel">
+    <div class="list-controls">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="search" class="search-input" id="search-possession"
+               placeholder="Buscar por prefijo o número…" autocomplete="off">
+      </div>
+      <div class="type-filters">
+        <button class="type-filter-btn active" data-list="possession" data-type="ALL"     id="type-all-p">Todos (0)</button>
+        <button class="type-filter-btn cable"  data-list="possession" data-type="CABLE"   id="type-cable-p">🔌 CABLE (0)</button>
+        <button class="type-filter-btn bottle" data-list="possession" data-type="BOTELLA" id="type-bottle-p">🍾 BOTELLA (0)</button>
+      </div>
+      <div class="bulk-actions">
+        <button id="select-all-possession" class="btn-ghost   btn-sm">☑ Sel. todos</button>
+        <button id="mark-used-btn"         class="btn-success btn-sm">✓ Marcar utilizado</button>
+        <button id="delete-possession-btn" class="btn-danger  btn-sm">✕ Eliminar</button>
+      </div>
+    </div>
+    <div id="list-possession"></div>
+  </section>
+
+  <!-- ── Tab: Utilizado ── -->
+  <section class="tab-content" id="tab-used" role="tabpanel">
+    <div class="list-controls">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="search" class="search-input" id="search-used"
+               placeholder="Buscar por prefijo o número…" autocomplete="off">
+      </div>
+      <div class="type-filters">
+        <button class="type-filter-btn active" data-list="used" data-type="ALL"     id="type-all-u">Todos (0)</button>
+        <button class="type-filter-btn cable"  data-list="used" data-type="CABLE"   id="type-cable-u">🔌 CABLE (0)</button>
+        <button class="type-filter-btn bottle" data-list="used" data-type="BOTELLA" id="type-bottle-u">🍾 BOTELLA (0)</button>
+      </div>
+      <div class="bulk-actions">
+        <button id="select-all-used"  class="btn-ghost     btn-sm">☑ Sel. todos</button>
+        <button id="rendir-btn"       class="btn-rendir    btn-sm">📜 Rendir</button>
+        <button id="return-btn"       class="btn-secondary btn-sm">↩ Devolver</button>
+        <button id="delete-used-btn"  class="btn-danger    btn-sm">✕ Eliminar</button>
+      </div>
+    </div>
+    <div id="list-used"></div>
+  </section>
+
+  <!-- ── Tab: Agregar ── -->
+  <section class="tab-content" id="tab-add" role="tabpanel">
+
+    <form id="range-form" novalidate>
+      <h2>📦 Cargar rango</h2>
+      <div class="form-group">
+        <label>Tipo de precinto</label>
+        <div class="type-toggle">
+          <button type="button" class="type-toggle-btn cable active" data-type="CABLE">🔌 CABLE</button>
+          <button type="button" class="type-toggle-btn bottle"       data-type="BOTELLA">🍾 BOTELLA</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="range-prefix">Prefijo</label>
+        <input type="text" id="range-prefix" placeholder="ej: bak" autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="range-start">Número inicial</label>
+          <input type="text" id="range-start" placeholder="ej: 68555" inputmode="numeric" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="range-end">Número final</label>
+          <input type="text" id="range-end" placeholder="ej: 68600" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
+      <button type="submit" class="btn-primary form-submit">Agregar rango</button>
+    </form>
+
+    <div class="section-divider">o agregar uno solo</div>
+
+    <form id="single-form" novalidate>
+      <h2>🔖 Agregar individual</h2>
+      <div class="form-group">
+        <label>Tipo de precinto</label>
+        <div class="type-toggle">
+          <button type="button" class="type-toggle-btn cable active" data-type="CABLE">🔌 CABLE</button>
+          <button type="button" class="type-toggle-btn bottle"       data-type="BOTELLA">🍾 BOTELLA</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="single-prefix">Prefijo</label>
+          <input type="text" id="single-prefix" placeholder="ej: bak" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+        <div class="form-group">
+          <label for="single-number">Número</label>
+          <input type="text" id="single-number" placeholder="ej: 68555" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
+      <button type="submit" class="btn-primary form-submit">Agregar precinto</button>
+    </form>
+
+  </section>
+
+  <!-- ── Historial (Rendidos) Modal ── -->
+  <div id="historial-overlay" class="historial-overlay hidden" role="dialog" aria-modal="true">
+    <div class="historial-panel">
+      <div class="historial-header">
+        <div>
+          <h2 class="historial-title">📜 Historial — Rendidos</h2>
+          <span class="historial-count" id="historial-count">0 precintos</span>
+        </div>
+        <button id="historial-close" class="historial-close" title="Cerrar">✕</button>
+      </div>
+      <div class="historial-search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="search" class="search-input" id="search-rendidos"
+               placeholder="Buscar en historial…" autocomplete="off">
+      </div>
+      <div class="type-filters" style="padding:0 14px 10px">
+        <button class="type-filter-btn active" data-list="rendidos" data-type="ALL"     id="type-all-r">Todos (0)</button>
+        <button class="type-filter-btn cable"  data-list="rendidos" data-type="CABLE"   id="type-cable-r">🔌 CABLE (0)</button>
+        <button class="type-filter-btn bottle" data-list="rendidos" data-type="BOTELLA" id="type-bottle-r">🍾 BOTELLA (0)</button>
+      </div>
+      <div id="list-rendidos" class="historial-list"></div>
+    </div>
+  </div>
+
+  <!-- ── Destino Dialog ── -->
+  <div id="destino-overlay" class="confirm-overlay hidden" role="dialog" aria-modal="true">
+    <div class="confirm-dialog">
+      <h3 id="destino-title">Destino</h3>
+      <p id="destino-subtitle" class="destino-subtitle"></p>
+      <div class="form-group">
+        <label for="destino-input">Destino</label>
+        <input type="text" id="destino-input" placeholder="ej: Obra Norte, Cliente X…" autocomplete="off" autocorrect="off">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label for="destino-fecha">Fecha de uso</label>
+        <input type="date" id="destino-fecha">
+      </div>
+      <div class="confirm-actions" style="margin-top:18px">
+        <button id="destino-cancel" class="btn-ghost">Cancelar</button>
+        <button id="destino-ok"     class="btn-primary">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Nota Dialog ── -->
+  <div id="nota-overlay" class="confirm-overlay hidden" role="dialog" aria-modal="true">
+    <div class="confirm-dialog">
+      <h3 id="nota-title">Nota</h3>
+      <div class="form-group" style="margin-bottom:0">
+        <label for="nota-input">Nota</label>
+        <textarea id="nota-input" rows="3" placeholder="Escribí una observación…" style="width:100%;padding:12px 13px;border:1px solid var(--border);border-radius:8px;font-size:1rem;resize:vertical;font-family:inherit;background:var(--bg);color:var(--text);outline:none;"></textarea>
+      </div>
+      <div class="confirm-actions" style="margin-top:16px">
+        <button id="nota-cancel" class="btn-ghost">Cancelar</button>
+        <button id="nota-ok"     class="btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Confirm Dialog ── -->
+  <div id="confirm-overlay" class="confirm-overlay hidden" role="dialog" aria-modal="true">
+    <div class="confirm-dialog">
+      <h3 id="confirm-title">Confirmar</h3>
+      <p id="confirm-message"></p>
+      <div class="confirm-actions">
+        <button id="confirm-cancel" class="btn-ghost">Cancelar</button>
+        <button id="confirm-ok"     class="btn-danger">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js?v=6"></script>
+</body>
+</html>

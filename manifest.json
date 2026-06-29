@@ -1,0 +1,18 @@
+{
+  "name": "Work Tracker",
+  "short_name": "WorkTracker",
+  "description": "Control de elementos de trabajo por prefijo y número",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
