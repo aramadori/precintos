@@ -8,14 +8,17 @@ separada por zonas, sin hacerlo a mano.
 ## Qué hace al apretar el botón
 
 1. Ordena todas las filas por la columna **zona** (la busca por el título;
-   si no la encuentra usa la columna G). Dentro de cada zona respeta el orden
+   si no la encuentra usa la columna G). Ordena por el número de zona, así
+   "ZONA - 10" va después de "ZONA - 9". Dentro de cada zona respeta el orden
    original de la planilla.
-2. Pone toda la planilla en **letra 14**, y así sale impresa: la impresión
-   nunca se achica.
+2. Pone toda la planilla en **letra 14**.
 3. Hoja **horizontal**, márgenes de 1 cm y **sin encabezado ni pie de
    página**: cada hoja muestra solo la tabla.
-4. Ajusta el ancho de las columnas. Si no entran a lo ancho, angosta las más
-   anchas y el texto largo sigue en la línea de abajo (no se corta).
+4. Ajusta el ancho de las columnas según los datos; los títulos largos
+   pasan a dos líneas. Si no entra todo a lo ancho, primero pasa a dos
+   líneas los textos largos (nombre, función, lugar), sin partir nunca
+   fechas, números ni códigos. Solo si ni así entra, achica la impresión lo
+   mínimo indispensable.
 5. Hace que **cada zona empiece en una hoja nueva** y **repite la fila de
    títulos** arriba de cada hoja.
 6. Abre la **vista previa** para que imprimas todo de una sola vez.
