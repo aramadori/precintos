@@ -6,8 +6,8 @@ REM   1. Ordena las filas por la columna "zona".
 REM   2. Pone la letra en 14 y ajusta el ancho de las columnas.
 REM   3. Inserta un salto de pagina antes de cada zona nueva.
 REM   4. Repite la fila de titulos arriba de cada hoja impresa.
-REM   5. Si las columnas no entran a lo ancho pone la hoja en horizontal;
-REM      si tampoco entran asi, achica lo justo para que no se corte nada.
+REM   5. Deja la hoja en horizontal y sin encabezado ni pie de pagina;
+REM      si las columnas no entran, achica lo justo para que no se corte nada.
 REM ===================================================================
 
 Option Explicit
@@ -136,8 +136,8 @@ Function PrepararZonas(oDoc As Object, oHoja As Object) As Long
 	End If
 	oHoja.setPrintTitleRows(tieneTitulos)
 
-	' --- 5. Vertical u horizontal segun lo que entre ---
-	Dim ladoCorto As Long, ladoLargo As Long, margenes As Long
+	' --- 5. Hoja horizontal, solo la tabla (sin encabezado ni pie) ---
+	Dim ladoCorto As Long, ladoLargo As Long
 	oEstilo = oDoc.StyleFamilies.getByName("PageStyles").getByName(oHoja.PageStyle)
 	ladoCorto = oEstilo.Width
 	ladoLargo = oEstilo.Height
@@ -145,25 +145,20 @@ Function PrepararZonas(oDoc As Object, oHoja As Object) As Long
 		ladoCorto = oEstilo.Height
 		ladoLargo = oEstilo.Width
 	End If
-	margenes = oEstilo.LeftMargin + oEstilo.RightMargin
+	oEstilo.IsLandscape = True
+	oEstilo.Width = ladoLargo
+	oEstilo.Height = ladoCorto
+	oEstilo.HeaderIsOn = False
+	oEstilo.FooterIsOn = False
 
 	oEstilo.ScaleToPages = 0
 	oEstilo.ScaleToPagesX = 0
 	oEstilo.ScaleToPagesY = 0
 	oEstilo.PageScale = 100
-	If anchoTotal <= ladoCorto - margenes Then
-		oEstilo.IsLandscape = False
-		oEstilo.Width = ladoCorto
-		oEstilo.Height = ladoLargo
-	Else
-		oEstilo.IsLandscape = True
-		oEstilo.Width = ladoLargo
-		oEstilo.Height = ladoCorto
-		If anchoTotal > ladoLargo - margenes Then
-			' Ni en horizontal entra: achicar solo lo necesario a lo ancho
-			oEstilo.ScaleToPagesX = 1
-			oEstilo.ScaleToPagesY = 0
-		End If
+	If anchoTotal > ladoLargo - oEstilo.LeftMargin - oEstilo.RightMargin Then
+		' No entra a lo ancho: achicar solo lo necesario para que no se corte
+		oEstilo.ScaleToPagesX = 1
+		oEstilo.ScaleToPagesY = 0
 	End If
 
 	PrepararZonas = nZonas

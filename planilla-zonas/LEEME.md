@@ -14,11 +14,16 @@ separada por zonas, sin hacerlo a mano.
    para que no se corte nada.
 3. Hace que **cada zona empiece en una hoja nueva** al imprimir.
 4. **Repite la fila de títulos** arriba de cada hoja.
-5. Si las columnas no entran en vertical, pone la hoja en **horizontal**.
-   Si tampoco entran así, achica apenas lo necesario para que no se corte.
+5. Deja la hoja en **horizontal** y **sin encabezado ni pie de página**: cada
+   hoja muestra solo la tabla. Si las columnas no entran a lo ancho, achica
+   apenas lo necesario para que no se corte.
 6. Abre la **vista previa** para que imprimas todo de una sola vez.
 
 ## Instalación (una sola vez)
+
+Hay dos formas; con una alcanza.
+
+### Forma A: instalador (recomendada)
 
 1. Descargá el archivo **`SepararPorZonas.oxt`** de esta carpeta.
 2. Abrí LibreOffice y andá a **Herramientas → Gestor de extensiones**.
@@ -26,6 +31,19 @@ separada por zonas, sin hacerlo a mano.
 4. Cerrá LibreOffice por completo y volvé a abrirlo.
 
 (En Windows también podés hacer doble clic en el `.oxt`).
+
+### Forma B: pegar la macro a mano
+
+1. Abrí LibreOffice Calc → **Herramientas → Macros → Editar macros…**
+2. A la izquierda, en **Mis macros y diálogos → Standard**, hacé doble clic
+   en **Module1** (si no existe: clic derecho en *Standard* → **Insertar →
+   Módulo BASIC**).
+3. Borrá lo que haya en la ventana, pegá todo el contenido de
+   **`src/Zonas.bas`** y guardá (Ctrl+G o el disquete).
+4. Para usarla: **Herramientas → Macros → Ejecutar macro… → Mis macros →
+   Standard → Module1 → SepararPorZonas → Ejecutar**.
+   Para tenerla a mano, agregale un botón o un atajo (ver abajo; con esta
+   forma la macro aparece en **Mis macros → Standard → Module1**).
 
 ## Uso
 
