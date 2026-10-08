@@ -10,13 +10,14 @@ separada por zonas, sin hacerlo a mano.
 1. Ordena todas las filas por la columna **zona** (la busca por el título;
    si no la encuentra usa la columna G). Dentro de cada zona respeta el orden
    original de la planilla.
-2. Pone toda la planilla en **letra 14** y ajusta el ancho de las columnas
-   para que no se corte nada.
-3. Hace que **cada zona empiece en una hoja nueva** al imprimir.
-4. **Repite la fila de títulos** arriba de cada hoja.
-5. Deja la hoja en **horizontal** y **sin encabezado ni pie de página**: cada
-   hoja muestra solo la tabla. Si las columnas no entran a lo ancho, achica
-   apenas lo necesario para que no se corte.
+2. Pone toda la planilla en **letra 14**, y así sale impresa: la impresión
+   nunca se achica.
+3. Hoja **horizontal**, márgenes de 1 cm y **sin encabezado ni pie de
+   página**: cada hoja muestra solo la tabla.
+4. Ajusta el ancho de las columnas. Si no entran a lo ancho, angosta las más
+   anchas y el texto largo sigue en la línea de abajo (no se corta).
+5. Hace que **cada zona empiece en una hoja nueva** y **repite la fila de
+   títulos** arriba de cada hoja.
 6. Abre la **vista previa** para que imprimas todo de una sola vez.
 
 ## Instalación (una sola vez)

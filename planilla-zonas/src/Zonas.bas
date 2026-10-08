@@ -3,11 +3,12 @@ REM  Planilla por zonas  -  macro para LibreOffice Calc
 REM
 REM  Deja la planilla abierta lista para imprimir separada por zona:
 REM   1. Ordena las filas por la columna "zona".
-REM   2. Pone la letra en 14 y ajusta el ancho de las columnas.
-REM   3. Inserta un salto de pagina antes de cada zona nueva.
-REM   4. Repite la fila de titulos arriba de cada hoja impresa.
-REM   5. Deja la hoja en horizontal y sin encabezado ni pie de pagina;
-REM      si las columnas no entran, achica lo justo para que no se corte nada.
+REM   2. Pone la letra en 14 (y asi sale impresa: nunca se achica).
+REM   3. Hoja horizontal, margenes de 1 cm, sin encabezado ni pie de pagina.
+REM   4. Ajusta el ancho de las columnas; si no entran a lo ancho, angosta
+REM      las mas anchas y el texto largo sigue en la linea de abajo.
+REM   5. Inserta un salto de pagina antes de cada zona nueva.
+REM   6. Repite la fila de titulos arriba de cada hoja impresa.
 REM ===================================================================
 
 Option Explicit
@@ -15,6 +16,8 @@ Option Explicit
 Const TAMANO_LETRA = 14
 Const COLUMNA_ZONA_POR_DEFECTO = 6   ' 0 = A, 1 = B ... 6 = G
 Const MARGEN_COLUMNA = 200           ' aire extra por columna (centesimas de mm)
+Const MARGEN_PAGINA = 1000           ' margenes de la hoja: 1 cm
+Const ANCHO_MINIMO = 1500            ' una columna nunca queda mas angosta que 1,5 cm
 
 Sub SepararPorZonas
 	Dim oDoc As Object
@@ -52,7 +55,7 @@ Function PrepararZonas(oDoc As Object, oHoja As Object) As Long
 	Dim oCursor As Object, oRango As Object, oCol As Object, oEstilo As Object
 	Dim ultFila As Long, ultCol As Long, colZona As Long, primeraFila As Long
 	Dim tieneTitulos As Boolean
-	Dim f As Long, c As Long, nZonas As Long, anchoTotal As Long
+	Dim f As Long, c As Long, nZonas As Long
 
 	' --- Rango con datos (sin filas vacias al final) ---
 	oCursor = oHoja.createCursor()
@@ -67,6 +70,11 @@ Function PrepararZonas(oDoc As Object, oHoja As Object) As Long
 		PrepararZonas = -1
 		Exit Function
 	End If
+	' ... ni columnas vacias a la derecha
+	Do While ultCol > 0
+		If oHoja.getCellRangeByPosition(ultCol, 0, ultCol, ultFila).queryContentCells(23).getCount() > 0 Then Exit Do
+		ultCol = ultCol - 1
+	Loop
 
 	colZona = BuscarColumnaZona(oHoja, ultCol)
 	If colZona < 0 Then
@@ -97,20 +105,65 @@ Function PrepararZonas(oDoc As Object, oHoja As Object) As Long
 	aOrden(1).Value = tieneTitulos
 	oRango.sort(aOrden())
 
-	' --- 2. Letra 14 y columnas a medida ---
+	' --- 2. Letra 14 ---
 	oRango.CharHeight = TAMANO_LETRA
 	oRango.CharHeightAsian = TAMANO_LETRA
 	oRango.CharHeightComplex = TAMANO_LETRA
-	oRango.Rows.OptimalHeight = True
+	oRango.VertJustify = com.sun.star.table.CellVertJustify.CENTER
+
+	' --- 3. Hoja horizontal, solo la tabla, siempre al 100 % ---
+	Dim ladoCorto As Long, ladoLargo As Long, disponible As Long
+	oEstilo = oDoc.StyleFamilies.getByName("PageStyles").getByName(oHoja.PageStyle)
+	ladoCorto = oEstilo.Width
+	ladoLargo = oEstilo.Height
+	If ladoCorto > ladoLargo Then
+		ladoCorto = oEstilo.Height
+		ladoLargo = oEstilo.Width
+	End If
+	oEstilo.IsLandscape = True
+	oEstilo.Width = ladoLargo
+	oEstilo.Height = ladoCorto
+	oEstilo.HeaderIsOn = False
+	oEstilo.FooterIsOn = False
+	oEstilo.LeftMargin = MARGEN_PAGINA
+	oEstilo.RightMargin = MARGEN_PAGINA
+	oEstilo.TopMargin = MARGEN_PAGINA
+	oEstilo.BottomMargin = MARGEN_PAGINA
+	oEstilo.ScaleToPages = 0
+	oEstilo.ScaleToPagesX = 0
+	oEstilo.ScaleToPagesY = 0
+	oEstilo.PageScale = 100
+	disponible = ladoLargo - 2 * MARGEN_PAGINA - 100   ' 1 mm de resguardo
+
+	' --- 4. Columnas a medida sin achicar la letra ---
 	oRango.Columns.OptimalWidth = True
-	anchoTotal = 0
+	Dim anchos(ultCol) As Long
 	For c = 0 To ultCol
 		oCol = oHoja.Columns.getByIndex(c)
-		oCol.Width = oCol.Width + MARGEN_COLUMNA
-		anchoTotal = anchoTotal + oCol.Width
+		If oCol.IsVisible Then anchos(c) = oCol.Width + MARGEN_COLUMNA Else anchos(c) = -1
 	Next c
+	Dim tope As Long
+	tope = CalcularTope(anchos(), disponible)
+	If tope > 0 And tope < ANCHO_MINIMO Then
+		' Demasiadas columnas para la hoja: unico caso en que se achica la impresion
+		tope = 0
+		oEstilo.ScaleToPagesX = 1
+		oEstilo.ScaleToPagesY = 0
+	End If
+	For c = 0 To ultCol
+		If anchos(c) >= 0 Then
+			oCol = oHoja.Columns.getByIndex(c)
+			If tope > 0 And anchos(c) > tope Then
+				oCol.Width = tope
+				oHoja.getCellRangeByPosition(c, 0, c, ultFila).IsTextWrapped = True
+			Else
+				oCol.Width = anchos(c)
+			End If
+		End If
+	Next c
+	oRango.Rows.OptimalHeight = True
 
-	' --- 3. Salto de pagina en cada cambio de zona ---
+	' --- 5. Salto de pagina en cada cambio de zona ---
 	oHoja.removeAllManualPageBreaks()
 	nZonas = 1
 	For f = primeraFila + 1 To ultFila
@@ -121,7 +174,7 @@ Function PrepararZonas(oDoc As Object, oHoja As Object) As Long
 		End If
 	Next f
 
-	' --- 4. Area de impresion y titulos repetidos ---
+	' --- 6. Area de impresion y titulos repetidos ---
 	Dim aAreas(0) As New com.sun.star.table.CellRangeAddress
 	aAreas(0) = oRango.RangeAddress
 	oHoja.setPrintAreas(aAreas())
@@ -136,32 +189,42 @@ Function PrepararZonas(oDoc As Object, oHoja As Object) As Long
 	End If
 	oHoja.setPrintTitleRows(tieneTitulos)
 
-	' --- 5. Hoja horizontal, solo la tabla (sin encabezado ni pie) ---
-	Dim ladoCorto As Long, ladoLargo As Long
-	oEstilo = oDoc.StyleFamilies.getByName("PageStyles").getByName(oHoja.PageStyle)
-	ladoCorto = oEstilo.Width
-	ladoLargo = oEstilo.Height
-	If ladoCorto > ladoLargo Then
-		ladoCorto = oEstilo.Height
-		ladoLargo = oEstilo.Width
-	End If
-	oEstilo.IsLandscape = True
-	oEstilo.Width = ladoLargo
-	oEstilo.Height = ladoCorto
-	oEstilo.HeaderIsOn = False
-	oEstilo.FooterIsOn = False
-
-	oEstilo.ScaleToPages = 0
-	oEstilo.ScaleToPagesX = 0
-	oEstilo.ScaleToPagesY = 0
-	oEstilo.PageScale = 100
-	If anchoTotal > ladoLargo - oEstilo.LeftMargin - oEstilo.RightMargin Then
-		' No entra a lo ancho: achicar solo lo necesario para que no se corte
-		oEstilo.ScaleToPagesX = 1
-		oEstilo.ScaleToPagesY = 0
-	End If
-
 	PrepararZonas = nZonas
+End Function
+
+REM Ancho maximo que pueden tener las columnas para que todas entren en
+REM "disponible" (las mas angostas quedan como estan). 0 = ya entran.
+Function CalcularTope(anchos() As Long, disponible As Long) As Long
+	Dim c As Long, total As Long, restante As Long, quedan As Long, tope As Long
+	Dim cambio As Boolean
+	Dim fija(UBound(anchos())) As Boolean
+	For c = 0 To UBound(anchos())
+		If anchos(c) >= 0 Then
+			total = total + anchos(c)
+			quedan = quedan + 1
+		Else
+			fija(c) = True
+		End If
+	Next c
+	If total <= disponible Then
+		CalcularTope = 0
+		Exit Function
+	End If
+	restante = disponible
+	Do
+		tope = restante \ quedan
+		cambio = False
+		For c = 0 To UBound(anchos())
+			If Not fija(c) And anchos(c) <= tope Then
+				fija(c) = True
+				restante = restante - anchos(c)
+				quedan = quedan - 1
+				cambio = True
+			End If
+		Next c
+	Loop While cambio And quedan > 0
+	If tope < 1 Then tope = 1
+	CalcularTope = tope
 End Function
 
 Function BuscarColumnaZona(oHoja As Object, ultCol As Long) As Long
