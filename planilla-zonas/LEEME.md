@@ -19,10 +19,12 @@ separada por zonas, sin hacerlo a mano.
      `10068 - TERMINAL 4`. Si el final cambia entre filas, lo deja.
    - En las **fechas**, si todas son del mismo año, las muestra sin el año
      (`09/10 19:00`).
+   - El título de la columna de zona queda solo como **ZONA** (por ejemplo,
+     `ZONA_JEFATURA_DESCRIPCION` → `ZONA`).
 3. Hoja **horizontal**, márgenes chicos (0,7 cm a los costados) y **sin encabezado ni pie de
    página**: cada hoja muestra solo la tabla.
 4. **Cada fila en una sola línea**: las columnas toman el ancho justo de sus
-   datos (los títulos largos van en dos líneas) y, si no entra todo a lo
+   datos (si algún título es largo, va en dos líneas) y, si no entra todo a lo
    ancho, la impresión se achica solo lo necesario.
 5. Hace que **cada zona empiece en una hoja nueva** y **repite la fila de
    títulos** arriba de cada hoja.

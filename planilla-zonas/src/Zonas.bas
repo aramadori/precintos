@@ -6,6 +6,7 @@ REM   1. Ordena las filas por la columna "zona".
 REM   2. Pone la letra en 14. En la columna de lugar saca lo que se repite
 REM      (el codigo duplicado y el final que es igual en todas las filas), y
 REM      si todas las fechas son del mismo año, las muestra sin el año.
+REM      El titulo de la columna de zona queda solo como "ZONA".
 REM   3. Hoja horizontal, margenes de 1 cm, sin encabezado ni pie de pagina.
 REM   4. Cada fila en una sola linea: las columnas toman el ancho justo de
 REM      sus datos (los titulos largos van en dos lineas) y, si no entran a
@@ -121,6 +122,12 @@ Function PrepararZonas(oDoc As Object, oHoja As Object) As Long
 
 	' --- 2. Letra 14 y lugar sin repeticiones ---
 	AcortarLugar oHoja, ultCol, primeraFila, ultFila
+	' Titulo largo de zona ("ZONA_JEFATURA_DESCRIPCION") -> "ZONA"
+	If tieneTitulos Then
+		If UCase(Left(sPrimera, 4)) = "ZONA" And Len(sPrimera) > 4 Then
+			oHoja.getCellByPosition(colZona, 0).setString("ZONA")
+		End If
+	End If
 	AcortarFechas oDoc, oHoja, ultCol, primeraFila, ultFila
 	oRango.CharHeight = TAMANO_LETRA
 	oRango.CharHeightAsian = TAMANO_LETRA
@@ -325,7 +332,7 @@ End Function
 Function BuscarColumnaZona(oHoja As Object, ultCol As Long) As Long
 	Dim c As Long
 	For c = 0 To ultCol
-		If LCase(Trim(oHoja.getCellByPosition(c, 0).getString())) = "zona" Then
+		If Left(LCase(Trim(oHoja.getCellByPosition(c, 0).getString())), 4) = "zona" Then
 			BuscarColumnaZona = c
 			Exit Function
 		End If
