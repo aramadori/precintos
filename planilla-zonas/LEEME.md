@@ -12,11 +12,10 @@ separada por zonas, sin hacerlo a mano.
    "ZONA - 10" va después de "ZONA - 9". Dentro de cada zona respeta el orden
    original de la planilla.
 2. Pone toda la planilla en **letra 14** y saca lo que se repite, para que
-   la letra salga más grande en el papel:
-   - En la columna de **lugar**, el código repetido entre paréntesis y el
-     final que es igual en todas las filas. Por ejemplo,
-     `10068 - TERMINAL 4 (10068) ( BS.AS.(CAPITAL) (001))` queda como
-     `10068 - TERMINAL 4`. Si el final cambia entre filas, lo deja.
+   la letra salga lo más grande posible en el papel:
+   - En la columna de **lugar**, el código que aparece dos veces. Por
+     ejemplo, `10068 - TERMINAL 4 (10068) ( BS.AS.(CAPITAL) (001))` queda
+     como `10068 - TERMINAL 4 ( BS.AS.(CAPITAL) (001))`.
    - En las **fechas**, si todas son del mismo año, las muestra sin el año
      (`09/10 19:00`).
    - El título de la columna de zona queda solo como **ZONA** (por ejemplo,

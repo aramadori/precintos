@@ -3,13 +3,13 @@ REM  Planilla por zonas  -  macro para LibreOffice Calc
 REM
 REM  Deja la planilla abierta lista para imprimir separada por zona:
 REM   1. Ordena las filas por la columna "zona".
-REM   2. Pone la letra en 14. En la columna de lugar saca lo que se repite
-REM      (el codigo duplicado y el final que es igual en todas las filas), y
-REM      si todas las fechas son del mismo año, las muestra sin el año.
+REM   2. Pone la letra en 14. En la columna de lugar saca el codigo que
+REM      aparece dos veces, y si todas las fechas son del mismo año, las
+REM      muestra sin el año.
 REM      El titulo de la columna de zona queda solo como "ZONA".
-REM   3. Hoja horizontal, margenes de 1 cm, sin encabezado ni pie de pagina.
+REM   3. Hoja horizontal, margenes chicos, sin encabezado ni pie de pagina.
 REM   4. Cada fila en una sola linea: las columnas toman el ancho justo de
-REM      sus datos (los titulos largos van en dos lineas) y, si no entran a
+REM      sus datos (un titulo largo va en dos lineas) y, si no entran a
 REM      lo ancho, la impresion se achica solo lo necesario.
 REM   5. Inserta un salto de pagina antes de cada zona nueva.
 REM   6. Repite la fila de titulos arriba de cada hoja impresa.
@@ -220,13 +220,12 @@ Function PrepararZonas(oDoc As Object, oHoja As Object) As Long
 	PrepararZonas = nZonas
 End Function
 
-REM En la columna cuyo titulo dice "LUGAR" saca lo repetido:
+REM En la columna cuyo titulo dice "LUGAR" saca el codigo repetido:
 REM   "10068 - TERMINAL 4 (10068) ( BS.AS.(CAPITAL) (001))"
-REM   -> "10068 - TERMINAL 4"
-REM El codigo entre parentesis se saca solo si es igual al del principio, y
-REM el final solo si es identico en todas las filas (no se pierde nada).
+REM   -> "10068 - TERMINAL 4 ( BS.AS.(CAPITAL) (001))"
+REM El codigo entre parentesis se saca solo si es igual al del principio.
 Sub AcortarLugar(oHoja As Object, ultCol As Long, primeraFila As Long, ultFila As Long)
-	Dim c As Long, f As Long, colLugar As Long, n As Long
+	Dim c As Long, f As Long, colLugar As Long
 	Dim s As String, codigo As String, marca As String, p As Long
 	If primeraFila = 0 Then Exit Sub
 	colLugar = -1
@@ -238,32 +237,16 @@ Sub AcortarLugar(oHoja As Object, ultCol As Long, primeraFila As Long, ultFila A
 	Next c
 	If colLugar < 0 Then Exit Sub
 
-	n = ultFila - primeraFila
-	Dim bases(n) As String, finales(n) As String
-	Dim finalComun As String, todosIguales As Boolean
-	todosIguales = True
 	For f = primeraFila To ultFila
 		s = oHoja.getCellByPosition(colLugar, f).getString()
-		bases(f - primeraFila) = s
-		finales(f - primeraFila) = ""
 		p = InStr(s, " - ")
 		If p > 1 Then
 			codigo = Left(s, p - 1)
 			marca = " (" & codigo & ")"
 			p = InStr(p, s, marca)
 			If p > 0 Then
-				bases(f - primeraFila) = Left(s, p - 1)
-				finales(f - primeraFila) = Mid(s, p + Len(marca))
+				oHoja.getCellByPosition(colLugar, f).setString(Left(s, p - 1) & Mid(s, p + Len(marca)))
 			End If
-		End If
-		If f = primeraFila Then finalComun = finales(0)
-		If finales(f - primeraFila) <> finalComun Then todosIguales = False
-	Next f
-	For f = primeraFila To ultFila
-		s = bases(f - primeraFila)
-		If Not todosIguales Then s = s & finales(f - primeraFila)
-		If s <> oHoja.getCellByPosition(colLugar, f).getString() Then
-			oHoja.getCellByPosition(colLugar, f).setString(s)
 		End If
 	Next f
 End Sub
