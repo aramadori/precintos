@@ -3,12 +3,11 @@ REM  Planilla por zonas  -  macro para LibreOffice Calc
 REM
 REM  Deja la planilla abierta lista para imprimir separada por zona:
 REM   1. Ordena las filas por la columna "zona".
-REM   2. Pone la letra en 14 (y asi sale impresa: nunca se achica).
+REM   2. Pone la letra en 14.
 REM   3. Hoja horizontal, margenes de 1 cm, sin encabezado ni pie de pagina.
-REM   4. Ajusta el ancho de las columnas segun los datos (los titulos largos
-REM      pasan a dos lineas). Si no entran a lo ancho, angosta primero las
-REM      columnas de texto mas anchas (hasta 2 lineas por fila, sin partir
-REM      fechas, numeros ni codigos); solo si ni asi entran, achica lo minimo.
+REM   4. Cada fila en una sola linea: las columnas toman el ancho justo de
+REM      sus datos (los titulos largos van en dos lineas) y, si no entran a
+REM      lo ancho, la impresion se achica solo lo necesario.
 REM   5. Inserta un salto de pagina antes de cada zona nueva.
 REM   6. Repite la fila de titulos arriba de cada hoja impresa.
 REM ===================================================================
@@ -17,10 +16,9 @@ Option Explicit
 
 Const TAMANO_LETRA = 14
 Const COLUMNA_ZONA_POR_DEFECTO = 6   ' 0 = A, 1 = B ... 6 = G
-Const MARGEN_COLUMNA = 200           ' aire extra por columna (centesimas de mm)
+Const MARGEN_COLUMNA = 100           ' aire extra por columna (centesimas de mm)
 Const MARGEN_PAGINA = 1000           ' margenes de la hoja: 1 cm
-Const MAX_LINEAS = 2                 ' un texto largo ocupa como mucho 2 lineas
-Const ANCHO_MIN_TEXTO = 3000         ' una columna de texto no baja de 3 cm
+Const TITULO_CORTO = 3000            ' titulos de hasta 3 cm no se parten
 
 Sub SepararPorZonas
 	Dim oDoc As Object
@@ -123,7 +121,7 @@ Function PrepararZonas(oDoc As Object, oHoja As Object) As Long
 	oRango.CharHeightComplex = TAMANO_LETRA
 	oRango.VertJustify = com.sun.star.table.CellVertJustify.CENTER
 
-	' --- 3. Hoja horizontal, solo la tabla, siempre al 100 % ---
+	' --- 3. Hoja horizontal, solo la tabla ---
 	Dim ladoCorto As Long, ladoLargo As Long, disponible As Long
 	oEstilo = oDoc.StyleFamilies.getByName("PageStyles").getByName(oHoja.PageStyle)
 	ladoCorto = oEstilo.Width
@@ -145,64 +143,40 @@ Function PrepararZonas(oDoc As Object, oHoja As Object) As Long
 	oEstilo.ScaleToPagesX = 0
 	oEstilo.ScaleToPagesY = 0
 	oEstilo.PageScale = 100
-	disponible = ladoLargo - 2 * MARGEN_PAGINA - 100   ' 1 mm de resguardo
+	disponible = ladoLargo - 2 * MARGEN_PAGINA
 
-	' --- 4. Columnas a medida ---
-	' Los titulos pueden ir en dos lineas: el ancho lo deciden los datos,
-	' pero cada columna queda con lugar para su titulo en dos lineas.
+	' --- 4. Columnas justas, cada fila en una sola linea ---
+	' Ancho con el titulo entero, para saber cuanto ocupa cada titulo
 	Dim anchosTitulo(ultCol) As Long
+	oRango.IsTextWrapped = False
 	oRango.Columns.OptimalWidth = True
 	For c = 0 To ultCol
 		anchosTitulo(c) = oHoja.Columns.getByIndex(c).Width
 	Next c
+	' El ancho lo deciden los datos; los titulos largos van en dos lineas
 	If tieneTitulos Then oHoja.getCellRangeByPosition(0, 0, ultCol, 0).IsTextWrapped = True
 	oRango.Columns.OptimalWidth = True
-	Dim anchos(ultCol) As Long, pisos(ultCol) As Long
+	Dim ancho As Long, anchoTotal As Long, pisoTitulo As Long
+	anchoTotal = 0
 	For c = 0 To ultCol
 		oCol = oHoja.Columns.getByIndex(c)
 		If oCol.IsVisible Then
-			anchos(c) = oCol.Width + MARGEN_COLUMNA
-			If TieneTextoConEspacios(oHoja, c, primeraFila, ultFila) Then
-				' Texto que se puede pasar a la linea de abajo
-				pisos(c) = anchos(c) \ MAX_LINEAS
-				If pisos(c) < ANCHO_MIN_TEXTO Then pisos(c) = ANCHO_MIN_TEXTO
-				If pisos(c) > anchos(c) Then pisos(c) = anchos(c)
-			Else
-				' Fechas, numeros y codigos: no se parten
-				pisos(c) = anchos(c)
+			ancho = oCol.Width
+			If tieneTitulos Then
+				If anchosTitulo(c) <= TITULO_CORTO Then pisoTitulo = anchosTitulo(c) Else pisoTitulo = (anchosTitulo(c) + 1) \ 2
+				If ancho < pisoTitulo Then ancho = pisoTitulo
 			End If
-			' Titulo corto: entero; titulo largo: en dos lineas
-			Dim pisoTitulo As Long
-			If anchosTitulo(c) <= ANCHO_MIN_TEXTO Then pisoTitulo = anchosTitulo(c) Else pisoTitulo = anchosTitulo(c) \ 2
-			pisoTitulo = pisoTitulo + MARGEN_COLUMNA
-			If tieneTitulos And pisos(c) < pisoTitulo Then pisos(c) = pisoTitulo
-		Else
-			anchos(c) = -1
-			pisos(c) = -1
-		End If
-	Next c
-	Dim tope As Long
-	tope = CalcularTope(anchos(), pisos(), disponible)
-	If tope < 0 Then
-		' Ni con el texto en dos lineas entra: se achica lo minimo para que entre
-		oEstilo.ScaleToPagesX = 1
-		oEstilo.ScaleToPagesY = 0
-	End If
-	Dim nuevo As Long
-	For c = 0 To ultCol
-		If anchos(c) >= 0 Then
-			nuevo = anchos(c)
-			If tope < 0 Then
-				nuevo = pisos(c)
-			ElseIf tope > 0 And nuevo > tope Then
-				nuevo = tope
-			End If
-			If nuevo < pisos(c) Then nuevo = pisos(c)
-			oHoja.Columns.getByIndex(c).Width = nuevo
-			If nuevo < anchos(c) Then oHoja.getCellRangeByPosition(c, 0, c, ultFila).IsTextWrapped = True
+			ancho = ancho + MARGEN_COLUMNA
+			oCol.Width = ancho
+			anchoTotal = anchoTotal + ancho
 		End If
 	Next c
 	oRango.Rows.OptimalHeight = True
+	If anchoTotal > disponible Then
+		' No entra a lo ancho: se achica la impresion solo lo necesario
+		oEstilo.ScaleToPagesX = 1
+		oEstilo.ScaleToPagesY = 0
+	End If
 
 	' --- 5. Salto de pagina en cada cambio de zona ---
 	oHoja.removeAllManualPageBreaks()
@@ -231,57 +205,6 @@ Function PrepararZonas(oDoc As Object, oHoja As Object) As Long
 	oHoja.setPrintTitleRows(tieneTitulos)
 
 	PrepararZonas = nZonas
-End Function
-
-REM Ancho maximo (tope) para que las columnas entren en "disponible", sin
-REM bajar ninguna de su piso. 0 = ya entran; -1 = ni con los pisos entran.
-Function CalcularTope(anchos() As Long, pisos() As Long, disponible As Long) As Long
-	Dim bajo As Long, alto As Long, medio As Long, c As Long
-	If AnchoConTope(anchos(), pisos(), 0, False) <= disponible Then
-		CalcularTope = 0
-		Exit Function
-	End If
-	If AnchoConTope(anchos(), pisos(), 0, True) > disponible Then
-		CalcularTope = -1
-		Exit Function
-	End If
-	bajo = 1
-	alto = 1
-	For c = 0 To UBound(anchos())
-		If anchos(c) > alto Then alto = anchos(c)
-	Next c
-	Do While alto - bajo > 1
-		medio = (bajo + alto) \ 2
-		If AnchoConTope(anchos(), pisos(), medio, True) <= disponible Then bajo = medio Else alto = medio
-	Loop
-	CalcularTope = bajo
-End Function
-
-Function AnchoConTope(anchos() As Long, pisos() As Long, tope As Long, conTope As Boolean) As Long
-	Dim c As Long, w As Long, total As Long
-	For c = 0 To UBound(anchos())
-		If anchos(c) >= 0 Then
-			w = anchos(c)
-			If conTope And w > tope Then w = tope
-			If w < pisos(c) Then w = pisos(c)
-			total = total + w
-		End If
-	Next c
-	AnchoConTope = total
-End Function
-
-Function TieneTextoConEspacios(oHoja As Object, c As Long, desde As Long, hasta As Long) As Boolean
-	Dim f As Long, oCelda As Object
-	For f = desde To hasta
-		oCelda = oHoja.getCellByPosition(c, f)
-		If oCelda.getType() = com.sun.star.table.CellContentType.TEXT Then
-			If InStr(Trim(oCelda.getString()), " ") > 0 Then
-				TieneTextoConEspacios = True
-				Exit Function
-			End If
-		End If
-	Next f
-	TieneTextoConEspacios = False
 End Function
 
 REM Numero de la zona dentro del texto ("ZONA - 3" -> 3). Sin numero: al final.

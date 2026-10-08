@@ -14,11 +14,9 @@ separada por zonas, sin hacerlo a mano.
 2. Pone toda la planilla en **letra 14**.
 3. Hoja **horizontal**, márgenes de 1 cm y **sin encabezado ni pie de
    página**: cada hoja muestra solo la tabla.
-4. Ajusta el ancho de las columnas según los datos; los títulos largos
-   pasan a dos líneas. Si no entra todo a lo ancho, primero pasa a dos
-   líneas los textos largos (nombre, función, lugar), sin partir nunca
-   fechas, números ni códigos. Solo si ni así entra, achica la impresión lo
-   mínimo indispensable.
+4. **Cada fila en una sola línea**: las columnas toman el ancho justo de sus
+   datos (los títulos largos van en dos líneas) y, si no entra todo a lo
+   ancho, la impresión se achica solo lo necesario.
 5. Hace que **cada zona empiece en una hoja nueva** y **repite la fila de
    títulos** arriba de cada hoja.
 6. Abre la **vista previa** para que imprimas todo de una sola vez.
