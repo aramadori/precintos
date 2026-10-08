@@ -3,7 +3,9 @@ REM  Planilla por zonas  -  macro para LibreOffice Calc
 REM
 REM  Deja la planilla abierta lista para imprimir separada por zona:
 REM   1. Ordena las filas por la columna "zona".
-REM   2. Pone la letra en 14.
+REM   2. Pone la letra en 14. En la columna de lugar saca lo que se repite
+REM      (el codigo duplicado y el final que es igual en todas las filas), y
+REM      si todas las fechas son del mismo año, las muestra sin el año.
 REM   3. Hoja horizontal, margenes de 1 cm, sin encabezado ni pie de pagina.
 REM   4. Cada fila en una sola linea: las columnas toman el ancho justo de
 REM      sus datos (los titulos largos van en dos lineas) y, si no entran a
@@ -17,8 +19,10 @@ Option Explicit
 Const TAMANO_LETRA = 14
 Const COLUMNA_ZONA_POR_DEFECTO = 6   ' 0 = A, 1 = B ... 6 = G
 Const MARGEN_COLUMNA = 100           ' aire extra por columna (centesimas de mm)
-Const MARGEN_PAGINA = 1000           ' margenes de la hoja: 1 cm
-Const TITULO_CORTO = 3000            ' titulos de hasta 3 cm no se parten
+Const MARGEN_PAGINA = 1000           ' margen de arriba y abajo: 1 cm
+Const MARGEN_COSTADOS = 700          ' margen de los costados: 0,7 cm
+Const TITULO_CORTO = 4000            ' titulos de hasta 4 cm no se parten
+Const LINEAS_TITULO = 2              ' los titulos largos usan hasta 2 lineas
 
 Sub SepararPorZonas
 	Dim oDoc As Object
@@ -115,7 +119,9 @@ Function PrepararZonas(oDoc As Object, oHoja As Object) As Long
 	oAux = oHoja.getCellRangeByPosition(colAux, 0, colAux, ultFila)
 	oAux.clearContents(1023)
 
-	' --- 2. Letra 14 ---
+	' --- 2. Letra 14 y lugar sin repeticiones ---
+	AcortarLugar oHoja, ultCol, primeraFila, ultFila
+	AcortarFechas oDoc, oHoja, ultCol, primeraFila, ultFila
 	oRango.CharHeight = TAMANO_LETRA
 	oRango.CharHeightAsian = TAMANO_LETRA
 	oRango.CharHeightComplex = TAMANO_LETRA
@@ -135,15 +141,15 @@ Function PrepararZonas(oDoc As Object, oHoja As Object) As Long
 	oEstilo.Height = ladoCorto
 	oEstilo.HeaderIsOn = False
 	oEstilo.FooterIsOn = False
-	oEstilo.LeftMargin = MARGEN_PAGINA
-	oEstilo.RightMargin = MARGEN_PAGINA
+	oEstilo.LeftMargin = MARGEN_COSTADOS
+	oEstilo.RightMargin = MARGEN_COSTADOS
 	oEstilo.TopMargin = MARGEN_PAGINA
 	oEstilo.BottomMargin = MARGEN_PAGINA
 	oEstilo.ScaleToPages = 0
 	oEstilo.ScaleToPagesX = 0
 	oEstilo.ScaleToPagesY = 0
 	oEstilo.PageScale = 100
-	disponible = ladoLargo - 2 * MARGEN_PAGINA
+	disponible = ladoLargo - 2 * MARGEN_COSTADOS
 
 	' --- 4. Columnas justas, cada fila en una sola linea ---
 	' Ancho con el titulo entero, para saber cuanto ocupa cada titulo
@@ -163,7 +169,7 @@ Function PrepararZonas(oDoc As Object, oHoja As Object) As Long
 		If oCol.IsVisible Then
 			ancho = oCol.Width
 			If tieneTitulos Then
-				If anchosTitulo(c) <= TITULO_CORTO Then pisoTitulo = anchosTitulo(c) Else pisoTitulo = (anchosTitulo(c) + 1) \ 2
+				If anchosTitulo(c) <= TITULO_CORTO Then pisoTitulo = anchosTitulo(c) Else pisoTitulo = (anchosTitulo(c) + LINEAS_TITULO - 1) \ LINEAS_TITULO
 				If ancho < pisoTitulo Then ancho = pisoTitulo
 			End If
 			ancho = ancho + MARGEN_COLUMNA
@@ -206,6 +212,96 @@ Function PrepararZonas(oDoc As Object, oHoja As Object) As Long
 
 	PrepararZonas = nZonas
 End Function
+
+REM En la columna cuyo titulo dice "LUGAR" saca lo repetido:
+REM   "10068 - TERMINAL 4 (10068) ( BS.AS.(CAPITAL) (001))"
+REM   -> "10068 - TERMINAL 4"
+REM El codigo entre parentesis se saca solo si es igual al del principio, y
+REM el final solo si es identico en todas las filas (no se pierde nada).
+Sub AcortarLugar(oHoja As Object, ultCol As Long, primeraFila As Long, ultFila As Long)
+	Dim c As Long, f As Long, colLugar As Long, n As Long
+	Dim s As String, codigo As String, marca As String, p As Long
+	If primeraFila = 0 Then Exit Sub
+	colLugar = -1
+	For c = 0 To ultCol
+		If InStr(UCase(oHoja.getCellByPosition(c, 0).getString()), "LUGAR") > 0 Then
+			colLugar = c
+			Exit For
+		End If
+	Next c
+	If colLugar < 0 Then Exit Sub
+
+	n = ultFila - primeraFila
+	Dim bases(n) As String, finales(n) As String
+	Dim finalComun As String, todosIguales As Boolean
+	todosIguales = True
+	For f = primeraFila To ultFila
+		s = oHoja.getCellByPosition(colLugar, f).getString()
+		bases(f - primeraFila) = s
+		finales(f - primeraFila) = ""
+		p = InStr(s, " - ")
+		If p > 1 Then
+			codigo = Left(s, p - 1)
+			marca = " (" & codigo & ")"
+			p = InStr(p, s, marca)
+			If p > 0 Then
+				bases(f - primeraFila) = Left(s, p - 1)
+				finales(f - primeraFila) = Mid(s, p + Len(marca))
+			End If
+		End If
+		If f = primeraFila Then finalComun = finales(0)
+		If finales(f - primeraFila) <> finalComun Then todosIguales = False
+	Next f
+	For f = primeraFila To ultFila
+		s = bases(f - primeraFila)
+		If Not todosIguales Then s = s & finales(f - primeraFila)
+		If s <> oHoja.getCellByPosition(colLugar, f).getString() Then
+			oHoja.getCellByPosition(colLugar, f).setString(s)
+		End If
+	Next f
+End Sub
+
+REM Columnas de fecha: si todas las fechas son del mismo año, se muestran
+REM sin el año ("10/09 19:00"). El valor de la celda no cambia.
+Sub AcortarFechas(oDoc As Object, oHoja As Object, ultCol As Long, primeraFila As Long, ultFila As Long)
+	Dim c As Long, f As Long, oCelda As Object, oFormatos As Object
+	Dim anio As Long, esFecha As Boolean, conHora As Boolean, hay As Boolean
+	Dim tipo As Long, clave As Long, sFormato As String
+	oFormatos = oDoc.NumberFormats
+	For c = 0 To ultCol
+		esFecha = True
+		conHora = False
+		hay = False
+		anio = 0
+		For f = primeraFila To ultFila
+			oCelda = oHoja.getCellByPosition(c, f)
+			Select Case oCelda.getType()
+			Case com.sun.star.table.CellContentType.EMPTY
+			Case com.sun.star.table.CellContentType.VALUE
+				tipo = oFormatos.getByKey(oCelda.NumberFormat).Type
+				If (tipo And com.sun.star.util.NumberFormat.DATE) = 0 Then
+					esFecha = False
+				ElseIf Not hay Then
+					anio = Year(oCelda.getValue())
+					hay = True
+				ElseIf Year(oCelda.getValue()) <> anio Then
+					esFecha = False
+				End If
+				If (tipo And com.sun.star.util.NumberFormat.TIME) <> 0 Then conHora = True
+			Case Else
+				esFecha = False
+			End Select
+			If Not esFecha Then Exit For
+		Next f
+		If esFecha And hay Then
+			If conHora Then sFormato = "DD/MM HH:MM" Else sFormato = "DD/MM"
+			Dim oLocal As New com.sun.star.lang.Locale
+			clave = oFormatos.queryKey(sFormato, oLocal, False)
+			If clave = -1 Then clave = oFormatos.addNew(sFormato, oLocal)
+			oHoja.getCellRangeByPosition(c, primeraFila, c, ultFila).NumberFormat = clave
+		End If
+	Next c
+End Sub
 
 REM Numero de la zona dentro del texto ("ZONA - 3" -> 3). Sin numero: al final.
 Function NumeroDeZona(s As String) As Double

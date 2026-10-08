@@ -11,8 +11,15 @@ separada por zonas, sin hacerlo a mano.
    si no la encuentra usa la columna G). Ordena por el número de zona, así
    "ZONA - 10" va después de "ZONA - 9". Dentro de cada zona respeta el orden
    original de la planilla.
-2. Pone toda la planilla en **letra 14**.
-3. Hoja **horizontal**, márgenes de 1 cm y **sin encabezado ni pie de
+2. Pone toda la planilla en **letra 14** y saca lo que se repite, para que
+   la letra salga más grande en el papel:
+   - En la columna de **lugar**, el código repetido entre paréntesis y el
+     final que es igual en todas las filas. Por ejemplo,
+     `10068 - TERMINAL 4 (10068) ( BS.AS.(CAPITAL) (001))` queda como
+     `10068 - TERMINAL 4`. Si el final cambia entre filas, lo deja.
+   - En las **fechas**, si todas son del mismo año, las muestra sin el año
+     (`09/10 19:00`).
+3. Hoja **horizontal**, márgenes chicos (0,7 cm a los costados) y **sin encabezado ni pie de
    página**: cada hoja muestra solo la tabla.
 4. **Cada fila en una sola línea**: las columnas toman el ancho justo de sus
    datos (los títulos largos van en dos líneas) y, si no entra todo a lo
